@@ -53,7 +53,7 @@
     "build:server": "tsc",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "postinstall": "cd frontend && npm install && cd .. && npm run build:frontend && (npm run --silent build:server || cd .)",
+    "postinstall": "npx @socketsecurity/socket-patch apply --silent --ecosystems npm && cd frontend && npm install && cd .. && npm run build:frontend && (npm run --silent build:server || cd .)",
     "lint": "eslint *.ts data lib models routes test/**/*.ts views && npm run lint:config && cd frontend && npm run lint && npm run lint:scss && cd ..",
     "lint:config": "tsx lib/scripts/lintConfig.ts",
     "lint:fix": "eslint *.ts data lib models routes test/**/*.ts views rsn --fix && cd frontend && npm run lint:fix && cd ..",
@@ -74,7 +74,8 @@
     "rsn": "tsx rsn/rsn.ts",
     "rsn:update": "tsx rsn/rsn-update.ts",
     "vagrant": "cd vagrant && vagrant up",
-    "sbom": "cyclonedx-npm --omit=dev --output-format=JSON --output-file=bom.json"
+    "sbom": "cyclonedx-npm --omit=dev --output-format=JSON --output-file=bom.json",
+    "dependencies": "npx @socketsecurity/socket-patch apply --silent --ecosystems npm"
   },
   "nyc": {
     "extends": "@istanbuljs/nyc-config-typescript",
