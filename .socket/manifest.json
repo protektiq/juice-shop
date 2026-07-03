@@ -1,0 +1,27 @@
+{
+  "patches": {
+    "pkg:npm/jsonwebtoken@0.4.0": {
+      "uuid": "704804c0-d85a-4377-94ef-6aba5bf5c33d",
+      "exportedAt": "Fri, 01 May 2026 16:10:31 GMT",
+      "files": {
+        "package/index.js": {
+          "beforeHash": "34d1aeca9754f307ec2b2105a276898d1cc9dc580f92e37ef8d3e403887627ca",
+          "afterHash": "07486b0e429fa4f181d0d5dfbd847c88aca08c3e5d69f4dca3b8bf0205fa7bd0"
+        }
+      },
+      "vulnerabilities": {
+        "GHSA-c7hr-j4mj-j2w6": {
+          "cves": [
+            "CVE-2015-9235"
+          ],
+          "summary": "Verification Bypass in jsonwebtoken",
+          "severity": "CRITICAL",
+          "description": "Versions 4.2.1 and earlier of `jsonwebtoken` are affected by a verification bypass vulnerability. This is a result of weak validation of the JWT algorithm type, occuring when an attacker is allowed to arbitrarily specify the JWT algorithm.\n\n\n\n\n## Recommendation\n\nUpdate to version 4.2.2 or later."
+        }
+      },
+      "description": "",
+      "license": "MIT",
+      "tier": "free"
+    }
+  }
+}
