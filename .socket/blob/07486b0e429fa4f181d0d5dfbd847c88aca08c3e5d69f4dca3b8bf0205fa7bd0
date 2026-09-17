@@ -1,0 +1,94 @@
+// Socket Community Patch: https://socket.dev
+// Date: Fri, 01 May 2026 16:10:29 GMT
+// For more information see https://socket.dev/patch/704804c0-d85a-4377-94ef-6aba5bf5c33d
+// This file includes modifications made by Socket, Inc. on Fri, 01 May 2026; these modifications are called the "Patch". In some cases, Socket may be required to make the Patch available to you under specific terms, or may be prohibited from restricting certain rights you may have. For example, the terms of another applicable license may require Socket to make the Patch available under specific terms. In those cases, the Patch is made available to you under the required terms, and Socket does not seek to restrict your rights relative to the Patch where prohibited. In all other cases, the Patch is available to you exclusively under the PolyForm Shield License 1.0.0 (https://polyformproject.org/licenses/shield/1.0.0/). The Patch was distributed by Socket with additional information concerning licensing, attribution, and limitation of liability which may be relevant to you and your use of the Patch. As far as the law allows, the Patch and the software including the patch come as is, without any warranty or condition, and Socket will not be liable to you for any damages arising out of the applicable license terms or the use or nature of the Patch or the software including the patch, under any kind of legal claim.
+// Original License: MIT
+
+var jws = require('jws');
+
+module.exports.decode = function (jwt) {
+  return jws.decode(jwt).payload;
+};
+
+module.exports.sign = function(payload, secretOrPrivateKey, options) {
+  options = options || {};
+
+  var header = {typ: 'JWT', alg: options.algorithm || 'HS256'};
+
+  payload.iat = Math.round(Date.now() / 1000);
+
+  if (options.expiresInMinutes) {
+    var ms = options.expiresInMinutes * 60;
+    payload.exp = payload.iat + ms;
+  }
+
+  if (options.audience)
+    payload.aud = options.audience;
+
+  if (options.issuer)
+    payload.iss = options.issuer;
+
+  if (options.subject)
+    payload.sub = options.subject;
+
+  var signed = jws.sign({header: header, payload: payload, secret: secretOrPrivateKey});
+
+  return signed;
+};
+
+module.exports.verify = function(jwtString, secretOrPublicKey, options, callback) {
+  if ((typeof options === 'function') && !callback) callback = options;
+  if (!options) options = {};
+
+
+  // SECURITY FIX (GHSA-c7hr-j4mj-j2w6): build a default algorithm whitelist
+  // from the key type so an attacker cannot substitute a symmetric algorithm
+  // (HS*) when the server expects an asymmetric one (RS*/ES*).
+  if (!options.algorithms) {
+    options.algorithms = ~secretOrPublicKey.toString().indexOf('BEGIN CERTIFICATE') ||
+                         ~secretOrPublicKey.toString().indexOf('BEGIN PUBLIC KEY') ?
+                          [ 'RS256','RS384','RS512','ES256','ES384','ES512' ] :
+                         ~secretOrPublicKey.toString().indexOf('BEGIN RSA PUBLIC KEY') ?
+                          [ 'RS256','RS384','RS512' ] :
+                          [ 'HS256','HS384','HS512' ];
+  }
+
+  var valid;
+  try {
+    valid = jws.verify(jwtString, secretOrPublicKey);
+  }
+  catch (e) {
+    return callback(e);
+  }
+
+  if (!valid)
+    return callback(new Error('invalid signature'));
+
+  var payload = this.decode(jwtString);
+
+  // SECURITY FIX (GHSA-c7hr-j4mj-j2w6): reject the token if its declared
+  // algorithm is not in the whitelist. Without this, jws.verify will accept
+  // an HS256-signed token using an RSA public key as the HMAC secret.
+  var header = jws.decode(jwtString).header;
+  if (!~options.algorithms.indexOf(header.alg)) {
+    return callback(new Error('invalid signature'));
+  }
+
+
+  if (payload.exp) {
+    if (Math.round(Date.now()) / 1000 >= payload.exp)
+      return callback(new Error('jwt expired'));
+  }
+
+  if (options.audience) {
+    if (payload.aud !== options.audience)
+      return callback(new Error('jwt audience invalid. expected: ' + payload.aud));
+  }
+
+  if (options.issuer) {
+    if (payload.iss !== options.issuer)
+      return callback(new Error('jwt issuer invalid. expected: ' + payload.iss));
+  }
+
+  callback(null, payload);
+};
